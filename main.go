@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -16,6 +17,12 @@ type User struct {
 	Username string `json:"username"`
 	Name     string `json:"name"`
 	Surname  string `json:"surname"`
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		fmt.Printf("No .env file found")
+	}
 }
 
 func main() {
