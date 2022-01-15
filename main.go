@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type User struct {
@@ -17,11 +18,22 @@ type User struct {
 
 func main() {
 	c := echo.New()
+	c.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "satusCode=${status}\n",
+	}))
 
 	c.GET("/main", mainHandler)
 	c.GET("/user/:data", getUser)
+
+	adminGroup := c.Group("/admin")
+
+	adminGroup.GET("/main", mainAdmin)
 	c.POST("/user", addUser)
 	c.Start(":8081")
+}
+
+func mainAdmin(c echo.Context) error {
+	return c.String(http.StatusOK, "Admindesin")
 }
 
 func mainHandler(c echo.Context) error {

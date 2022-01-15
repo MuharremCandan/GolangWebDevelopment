@@ -1,0 +1,1 @@
+https://cs.opensource.google/go/go   ----> Google ın teknolojilerin açık kaynak hallerinde sunmuş bir site
