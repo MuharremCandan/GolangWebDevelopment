@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -18,7 +20,7 @@ type User struct {
 
 func main() {
 	c := echo.New()
-	c.Use(setHeader)
+	//	c.Use(setHeader)
 	c.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "satusCode=${status}\n",
 	}))
@@ -27,16 +29,51 @@ func main() {
 	c.GET("/user/:data", getUser)
 
 	adminGroup := c.Group("/admin")
-	adminGroup.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-		if username == "admin" && password == "123" {
-			return true, nil
-		}
-		return false, nil
-	}))
 
-	adminGroup.GET("/main", mainAdmin)
+	/*
+		adminGroup.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+			if username == "admin" && password == "123" {
+				return true, nil
+			}
+			return false, nil
+		}))
+	*/
+	adminGroup.GET("/main", mainAdmin, checkCookie)
+	adminGroup.GET("/login", loginAdmin)
 	c.POST("/user", addUser)
 	c.Start(":8081")
+}
+func checkCookie(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		cookie, err := c.Cookie("userId")
+		if err != nil {
+			if strings.Contains(err.Error(), "named cookie not present") {
+
+				return c.String(http.StatusBadRequest, "Herhangi bir cookie gönderilmedi")
+			}
+			return err
+		}
+		if cookie.Value == "user_id" {
+			return next(c)
+		}
+		return c.String(http.StatusUnauthorized, "Doğru Cookie gönderilmedi")
+	}
+}
+
+func loginAdmin(c echo.Context) error {
+	username := c.QueryParam("username")
+	password := c.QueryParam("password")
+	if username == "admin" && password == "123" {
+		cookie := http.Cookie{
+			Name:    "userId",
+			Value:   "user_id",
+			Expires: time.Now().Add(48 * time.Hour),
+		}
+		c.SetCookie(&cookie)
+		return c.String(http.StatusOK, "Login Oldundu")
+
+	}
+	return c.String(http.StatusUnauthorized, "Yanlış Admin Bilgileri")
 }
 
 func setHeader(next echo.HandlerFunc) echo.HandlerFunc {
