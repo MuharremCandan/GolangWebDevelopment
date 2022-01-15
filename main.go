@@ -11,13 +11,14 @@ import (
 )
 
 type User struct {
-	Username string "json:'username'"
-	Name     string "json:'name'"
-	Surname  string "json:'surname'"
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
 }
 
 func main() {
 	c := echo.New()
+	c.Use(setHeader)
 	c.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "satusCode=${status}\n",
 	}))
@@ -26,10 +27,26 @@ func main() {
 	c.GET("/user/:data", getUser)
 
 	adminGroup := c.Group("/admin")
+	adminGroup.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+		if username == "admin" && password == "123" {
+			return true, nil
+		}
+		return false, nil
+	}))
 
 	adminGroup.GET("/main", mainAdmin)
 	c.POST("/user", addUser)
 	c.Start(":8081")
+}
+
+func setHeader(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		contentType := c.Request().Header.Get("Content-Type")
+		if contentType == "application/json" {
+			return c.String(http.StatusBadRequest, "Yanlızca application/json tipinde istek atılabilir")
+		}
+		return next(c)
+	}
 }
 
 func mainAdmin(c echo.Context) error {
@@ -38,7 +55,7 @@ func mainAdmin(c echo.Context) error {
 
 func mainHandler(c echo.Context) error {
 
-	return c.String(http.StatusOK, "İlk backend project")
+	return c.String(http.StatusOK, "Main handler çağrıldı")
 }
 
 func getUser(c echo.Context) error {
